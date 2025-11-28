@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Pixel Art Mágico ✨</title>
+    <style>
+        :root {
+            --bg-color: #f0f8ff;
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --dark: #2C3E50;
+            --light: #ffffff;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin: 10px 0;
+            text-shadow: 2px 2px 0px #ffeaa7;
+            text-align: center;
+        }
+
+        /* Contenedor Principal de Controles */
+        .controls-wrapper {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: 4px solid var(--secondary);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        /* Fila de Herramientas */
+        .tools-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Fila de Paleta de Colores */
+        .palette-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        .swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+
+        .swatch:hover {
+            transform: scale(1.2);
+            z-index: 2;
+        }
+
+        .swatch.selected {
+            border-color: var(--dark);
+            transform: scale(1.1);
+        }
+
+        /* Botones y Selectores */
+        button {
+            background: #eee;
+            border: none;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.1s;
+            border-bottom: 4px solid #ccc;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            border-bottom: 0px solid #ccc;
+        }
+
+        button.active {
+            background: var(--secondary);
+            color: white;
+            border-bottom-color: #2a9d8f;
+        }
+
+        /* Input color nativo (oculto visualmente pero funcional) */
+        #colorPicker {
+            width: 45px;
+            height: 45px;
+            border: none;
+            cursor: pointer;
+            background: none;
+            padding: 0;
+        }
+        
+        select {
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 10px;
+            border: 2px solid var(--secondary);
+            font-family: inherit;
+        }
+
+        /* El Lienzo */
+        #canvas-container {
+            display: grid;
+            background-color: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border: 4px solid var(--dark);
+            cursor: crosshair;
+            touch-action: none; /* Importante para dibujar en móviles */
+        }
+
+        .pixel {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #eee;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎨 Pixel Art Mágico 👾</h1>
+
+    <div class="controls-wrapper">
+        <div class="tools-row">
+            <select id="sizePicker">
+                <option value="8">8 x 8 (Grande)</option>
+                <option value="16" selected>16 x 16 (Normal)</option>
+                <option value="32">32 x 32 (Pequeño)</option>
+            </select>
+
+            <div style="width: 2px; height: 30px; background:#ddd;"></div>
+
+            <input type="color" id="colorPicker" value="#000000" title="Mezclar color propio">
+            
+            <button id="btn-pencil" class="active" title="Lápiz">✏️</button>
+            <button id="btn-eraser" title="Goma">🧽</button>
+            
+            <div style="width: 2px; height: 30px; background:#ddd;"></div>
+
+            <button id="btn-clear" title="Borrar Todo" style="background: #ffadad; color: white;">🗑️</button>
+        </div>
+
+        <div id="palette-container" class="palette-row">
+            </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- Configuración ---
+        const PRESET_COLORS = [
+            '#000000', '#555555', '#AAAAAA', '#FFFFFF', // Escala grises
+            '#8B4513', '#D2691E', '#FFDEAD', '#F0E68C', // Marrones/Piel
+            '#FF0000', '#FF69B4', '#FF4500', '#FFA500', // Rojos/Rosas/Naranjas
+            '#FFD700', '#FFFF00', '#ADFF2F', '#008000', // Amarillos/Verdes
+            '#00FFFF', '#00BFFF', '#0000FF', '#8A2BE2'  // Azules/Morados
+        ];
+
+        // --- Variables DOM ---
+        const canvasContainer = document.getElementById('canvas-container');
+        const colorPicker = document.getElementById('colorPicker');
+        const paletteContainer = document.getElementById('palette-container');
+        const sizePicker = document.getElementById('sizePicker');
+        const btnPencil = document.getElementById('btn-pencil');
+        const btnEraser = document.getElementById('btn-eraser');
+        const btnClear = document.getElementById('btn-clear');
+
+        // --- Estado ---
+        let isDrawing = false;
+        let currentMode = 'pencil'; 
+        let currentSize = 16;
+
+        // --- Inicialización ---
+        function init() {
+            // Generar la paleta visual
+            generatePalette();
+
+            // Cargar datos
+            const savedSize = localStorage.getItem('pixelart_size');
+            if (savedSize) {
+                currentSize = parseInt(savedSize);
+                sizePicker.value = currentSize;
+            }
+            
+            const savedColor = localStorage.getItem('pixelart_color');
+            if (savedColor) {
+                colorPicker.value = savedColor;
+                highlightSwatch(savedColor);
+            } else {
+                highlightSwatch('#000000'); // Default
+            }
+
+            createGrid(currentSize);
+            loadDrawing();
+        }
+
+        // --- Generar Paleta ---
+        function generatePalette() {
+            paletteContainer.innerHTML = '';
+            PRESET_COLORS.forEach(color => {
+                const swatch = document.createElement('div');
+                swatch.className = 'swatch';
+                swatch.style.backgroundColor = color;
+                swatch.onclick = () => {
+                    colorPicker.value = color; // Actualizar el input oculto
+                    highlightSwatch(color);    // Marcar visualmente
+                    setMode('pencil');         // Activar lápiz automáticamente
+                    saveState();               // Guardar color preferido
+                };
+                paletteContainer.appendChild(swatch);
+            });
+        }
+
+        function highlightSwatch(colorHex) {
+            // Normalizar a mayúsculas para comparar
+            const normalizedColor = colorHex.toUpperCase();
+            
+            // Quitar clase selected de todos
+            document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+            
+            // Buscar si el color existe en la paleta y seleccionarlo
+            // Nota: Esto busca coincidencia exacta. 
+            // Si el usuario usa el input nativo y elige un color raro, ninguno se marcará (comportamiento correcto).
+            const swatches = document.querySelectorAll('.swatch');
+            for(let s of swatches) {
+                // Convertimos el rgb() del estilo a hex para comparar o comparamos visualmente
+                // Una forma simple es comparar el background que asignamos
+                if (rgbToHex(s.style.backgroundColor).toUpperCase() === normalizedColor || 
+                    s.style.backgroundColor === colorHex) {
+                    s.classList.add('selected');
+                }
+            }
+        }
+
+        // Helper para convertir rgb(x,x,x) a hex (necesario por cómo los navegadores guardan estilos)
+        function rgbToHex(col) {
+            if(col.charAt(0)=='#') return col;
+            col=col.split('(')[1].split(')')[0].split(',');
+            var hex = x => { var n=parseInt(x).toString(16); return (n.length==1) ? "0"+n : n; }
+            return "#" + hex(col[0]) + hex(col[1]) + hex(col[2]);
+        }
+
+        // --- Grid y Dibujo ---
+        function createGrid(size) {
+            canvasContainer.innerHTML = '';
+            const canvasSize = Math.min(window.innerWidth - 40, 500); 
+            canvasContainer.style.width = `${canvasSize}px`;
+            canvasContainer.style.height = `${canvasSize}px`;
+            canvasContainer.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            canvasContainer.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+            for (let i = 0; i < size * size; i++) {
+                const pixel = document.createElement('div');
+                pixel.classList.add('pixel');
+                
+                // Eventos Mouse
+                pixel.addEventListener('mousedown', startDrawing);
+                pixel.addEventListener('mouseover', draw);
+                pixel.addEventListener('mouseup', stopDrawing);
+                
+                // Eventos Touch (Móvil)
+                pixel.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); draw(e); });
+                
+                canvasContainer.appendChild(pixel);
+            }
+        }
+
+        function startDrawing(e) { isDrawing = true; draw(e); }
+        function stopDrawing() { isDrawing = false; saveDrawing(); }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            let target;
+            if (e.type.includes('touch')) {
+                const touch = e.touches[0];
+                target = document.elementFromPoint(touch.clientX, touch.clientY);
+            } else {
+                target = e.target;
+            }
+
+            if (target && target.classList.contains('pixel')) {
+                if (currentMode === 'pencil') {
+                    target.style.backgroundColor = colorPicker.value;
+                } else {
+                    target.style.backgroundColor = 'white';
+                }
+            }
+        }
+
+        document.body.addEventListener('mouseup', () => { if(isDrawing) { isDrawing = false; saveDrawing(); } });
+
+        // --- Control de Herramientas ---
+        function setMode(mode) {
+            currentMode = mode;
+            btnPencil.classList.toggle('active', mode === 'pencil');
+            btnEraser.classList.toggle('active', mode === 'eraser');
+        }
+
+        btnPencil.addEventListener('click', () => setMode('pencil'));
+        btnEraser.addEventListener('click', () => setMode('eraser'));
+
+        // Input nativo cambia
+        colorPicker.addEventListener('change', () => {
+            setMode('pencil');
+            highlightSwatch(colorPicker.value);
+            saveState();
+        });
+
+        btnClear.addEventListener('click', () => {
+            if(confirm('¿Borrar dibujo? 🗑️')) {
+                document.querySelectorAll('.pixel').forEach(p => p.style.backgroundColor = 'white');
+                saveDrawing();
+            }
+        });
+
+        sizePicker.addEventListener('change', (e) => {
+            if(confirm('Cambiar tamaño borrará el dibujo. ¿Seguro?')) {
+                currentSize = parseInt(e.target.value);
+                localStorage.setItem('pixelart_size', currentSize);
+                localStorage.removeItem('pixelart_data'); 
+                createGrid(currentSize);
+            } else {
+                e.target.value = currentSize;
+            }
+        });
+
+        // --- Persistencia ---
+        function saveState() {
+            localStorage.setItem('pixelart_color', colorPicker.value);
+        }
+
+        function saveDrawing() {
+            const pixels = document.querySelectorAll('.pixel');
+            const gridData = [];
+            pixels.forEach(p => {
+                const c = p.style.backgroundColor;
+                gridData.push((c === 'white' || c === '') ? null : c);
+            });
+            localStorage.setItem('pixelart_data', JSON.stringify(gridData));
+        }
+
+        function loadDrawing() {
+            const data = localStorage.getItem('pixelart_data');
+            if (!data) return;
+            const gridData = JSON.parse(data);
+            const pixels = document.querySelectorAll('.pixel');
+            if (gridData.length !== pixels.length) return;
+            pixels.forEach((p, i) => { if(gridData[i]) p.style.backgroundColor = gridData[i]; });
+        }
+
+        init();
+    </script>
+</body>
+</html>
