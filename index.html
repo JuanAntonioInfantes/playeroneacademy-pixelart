@@ -19,16 +19,16 @@
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
             background-color: var(--bg-color);
             margin: 0;
-            height: 100vh; /* Ocupar toda la altura */
+            height: 100vh;
             display: flex;
-            flex-direction: row; /* Elementos lado a lado */
-            overflow: hidden; /* Evitar scroll en la página principal */
+            flex-direction: row;
+            overflow: hidden;
             user-select: none;
         }
 
         /* --- ZONA IZQUIERDA: EL LIENZO --- */
         .canvas-area {
-            flex: 1; /* Ocupa todo el espacio sobrante */
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -45,9 +45,19 @@
             background-color: white;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             border: 4px solid var(--dark);
-            cursor: crosshair;
             touch-action: none;
-            /* El tamaño se calcula en JS */
+        }
+
+        /* --- CURSORES PERSONALIZADOS --- */
+        
+        /* Cursor Lápiz: Un lápiz apuntando a la esquina inferior izquierda */
+        .cursor-pencil {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="%23FF6B6B" stroke="black" stroke-width="2" d="M22 2 L30 10 L8 32 L0 32 L0 24 Z"/><path fill="%23F4D03F" d="M8 32 L0 32 L0 24 Z"/></svg>') 0 32, auto;
+        }
+
+        /* Cursor Goma: Un cuadrado blanco con borde */
+        .cursor-eraser {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect x="2" y="2" width="28" height="28" fill="white" stroke="%232C3E50" stroke-width="4" rx="4"/></svg>') 16 16, auto;
         }
 
         .pixel {
@@ -66,7 +76,7 @@
             flex-direction: column;
             padding: 20px;
             box-shadow: -5px 0 15px rgba(0,0,0,0.05);
-            overflow-y: auto; /* Scroll si la pantalla es bajita */
+            overflow-y: auto;
             gap: 20px;
             z-index: 10;
         }
@@ -89,7 +99,6 @@
             font-weight: bold;
         }
 
-        /* Herramientas Principales */
         .tools-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -105,6 +114,10 @@
             cursor: pointer;
             border-bottom: 4px solid #ccc;
             transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         button:active {
@@ -136,10 +149,9 @@
             margin-bottom: 10px;
         }
 
-        /* Paleta de Colores en Rejilla */
         .palette-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4 columnas */
+            grid-template-columns: repeat(4, 1fr);
             gap: 10px;
             justify-items: center;
             background: #f8f9fa;
@@ -160,7 +172,6 @@
         .swatch:hover { transform: scale(1.2); }
         .swatch.selected { border-color: var(--dark); transform: scale(1.1); box-shadow: 0 0 0 2px var(--secondary); }
 
-        /* Input nativo disimulado */
         #colorPicker {
             width: 100%;
             height: 40px;
@@ -169,10 +180,9 @@
             background: transparent;
         }
 
-        /* --- RESPONSIVE (Móviles) --- */
         @media (max-width: 800px) {
             body {
-                flex-direction: column; /* Volver a vertical en móviles */
+                flex-direction: column;
                 height: auto;
                 overflow: visible;
             }
@@ -187,7 +197,7 @@
                 box-sizing: border-box;
             }
             .palette-grid {
-                grid-template-columns: repeat(6, 1fr); /* Más columnas en móvil */
+                grid-template-columns: repeat(6, 1fr);
             }
         }
     </style>
@@ -195,7 +205,7 @@
 <body>
 
     <div class="canvas-area">
-        <div id="canvas-container"></div>
+        <div id="canvas-container" class="cursor-pencil"></div>
     </div>
 
     <div class="sidebar">
@@ -224,8 +234,7 @@
 
         <div>
             <div class="section-title">COLORES</div>
-            <div id="palette-container" class="palette-grid">
-                </div>
+            <div id="palette-container" class="palette-grid"></div>
         </div>
 
         <button id="btn-clear">🗑️ BORRAR TODO</button>
@@ -258,7 +267,6 @@
         function init() {
             generatePalette();
             
-            // Recuperar datos
             const savedSize = localStorage.getItem('pixelart_size');
             if (savedSize) {
                 currentSize = parseInt(savedSize);
@@ -275,11 +283,9 @@
 
             createGrid(currentSize);
             loadDrawing();
+            updateCursor(); // Aplicar cursor inicial
 
-            // Ajustar grid si cambia ventana
-            window.addEventListener('resize', () => {
-                resizeCanvas(); // Solo ajusta tamaño visual
-            });
+            window.addEventListener('resize', () => { resizeCanvas(); });
         }
 
         function generatePalette() {
@@ -319,12 +325,9 @@
 
         function createGrid(size) {
             canvasContainer.innerHTML = '';
-            
-            // Configurar grid CSS
             canvasContainer.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
             canvasContainer.style.gridTemplateRows = `repeat(${size}, 1fr)`;
 
-            // Crear pixeles
             for (let i = 0; i < size * size; i++) {
                 const pixel = document.createElement('div');
                 pixel.classList.add('pixel');
@@ -334,22 +337,15 @@
                 pixel.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); draw(e); });
                 canvasContainer.appendChild(pixel);
             }
-            
-            resizeCanvas(); // Calcular tamaño inicial
+            resizeCanvas();
         }
 
-        // Función inteligente para calcular el tamaño máximo posible del cuadrado
         function resizeCanvas() {
-            const sidePanelWidth = window.innerWidth > 800 ? 320 : 0; // Si es escritorio, restamos panel
-            const availableWidth = window.innerWidth - sidePanelWidth - 40; // 40px padding
-            const availableHeight = window.innerHeight - 40; // 40px padding
-            
-            // Queremos un cuadrado, así que cogemos el lado más pequeño disponible
+            const sidePanelWidth = window.innerWidth > 800 ? 320 : 0;
+            const availableWidth = window.innerWidth - sidePanelWidth - 40;
+            const availableHeight = window.innerHeight - 40;
             const maxSize = Math.min(availableWidth, availableHeight);
-            
-            // Protecciones para que no sea ni muy pequeño ni rompa layout
             const finalSize = Math.max(300, maxSize); 
-
             canvasContainer.style.width = `${finalSize}px`;
             canvasContainer.style.height = `${finalSize}px`;
         }
@@ -382,6 +378,16 @@
             currentMode = mode;
             btnPencil.classList.toggle('active', mode === 'pencil');
             btnEraser.classList.toggle('active', mode === 'eraser');
+            updateCursor();
+        }
+
+        // Nueva función para cambiar el cursor del grid
+        function updateCursor() {
+            if (currentMode === 'pencil') {
+                canvasContainer.className = 'cursor-pencil';
+            } else {
+                canvasContainer.className = 'cursor-eraser';
+            }
         }
 
         btnPencil.addEventListener('click', () => setMode('pencil'));
