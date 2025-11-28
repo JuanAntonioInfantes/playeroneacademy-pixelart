@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Pixel Art Mágico ✨</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
     <style>
         :root {
             --bg-color: #f0f8ff;
@@ -11,95 +12,99 @@
             --secondary: #4ECDC4;
             --dark: #2C3E50;
             --light: #ffffff;
+            --panel-width: 320px;
         }
 
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
             background-color: var(--bg-color);
+            margin: 0;
+            height: 100vh; /* Ocupar toda la altura */
             display: flex;
-            flex-direction: column;
+            flex-direction: row; /* Elementos lado a lado */
+            overflow: hidden; /* Evitar scroll en la página principal */
+            user-select: none;
+        }
+
+        /* --- ZONA IZQUIERDA: EL LIENZO --- */
+        .canvas-area {
+            flex: 1; /* Ocupa todo el espacio sobrante */
+            display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            margin: 0;
             padding: 20px;
-            user-select: none;
+            background-image: 
+                radial-gradient(#e0e7ff 15%, transparent 16%),
+                radial-gradient(#e0e7ff 15%, transparent 16%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        #canvas-container {
+            display: grid;
+            background-color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 4px solid var(--dark);
+            cursor: crosshair;
+            touch-action: none;
+            /* El tamaño se calcula en JS */
+        }
+
+        .pixel {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #f0f0f0;
             box-sizing: border-box;
+        }
+
+        /* --- ZONA DERECHA: CONTROLES --- */
+        .sidebar {
+            width: var(--panel-width);
+            background: var(--light);
+            border-left: 4px solid var(--secondary);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+            overflow-y: auto; /* Scroll si la pantalla es bajita */
+            gap: 20px;
+            z-index: 10;
         }
 
         h1 {
             color: var(--primary);
-            margin: 10px 0;
-            text-shadow: 2px 2px 0px #ffeaa7;
+            margin: 0;
+            font-size: 1.8rem;
             text-align: center;
+            text-shadow: 2px 2px 0px #ffeaa7;
+            line-height: 1.2;
         }
 
-        /* Contenedor Principal de Controles */
-        .controls-wrapper {
-            background: var(--light);
-            padding: 15px;
-            border-radius: 20px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            border: 4px solid var(--secondary);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            align-items: center;
-            max-width: 500px;
-            width: 100%;
+        .section-title {
+            font-size: 1rem;
+            color: var(--dark);
+            opacity: 0.7;
+            text-align: center;
+            margin-bottom: 5px;
+            font-weight: bold;
         }
 
-        /* Fila de Herramientas */
-        .tools-row {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
+        /* Herramientas Principales */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
-        /* Fila de Paleta de Colores */
-        .palette-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            background: #f4f4f4;
-            padding: 10px;
-            border-radius: 12px;
-        }
-
-        .swatch {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 3px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: transform 0.1s;
-        }
-
-        .swatch:hover {
-            transform: scale(1.2);
-            z-index: 2;
-        }
-
-        .swatch.selected {
-            border-color: var(--dark);
-            transform: scale(1.1);
-        }
-
-        /* Botones y Selectores */
         button {
             background: #eee;
             border: none;
             border-radius: 12px;
-            padding: 8px 12px;
+            padding: 15px 5px;
             font-size: 1.5rem;
             cursor: pointer;
-            transition: transform 0.1s;
             border-bottom: 4px solid #ccc;
+            transition: all 0.1s;
         }
 
         button:active {
@@ -113,83 +118,130 @@
             border-bottom-color: #2a9d8f;
         }
 
-        /* Input color nativo (oculto visualmente pero funcional) */
-        #colorPicker {
-            width: 45px;
-            height: 45px;
-            border: none;
-            cursor: pointer;
-            background: none;
-            padding: 0;
+        #btn-clear {
+            width: 100%;
+            background: #ffadad;
+            color: white;
+            border-bottom-color: #e07a7a;
+            margin-top: 10px;
         }
-        
+
         select {
+            width: 100%;
             padding: 10px;
             font-size: 1rem;
             border-radius: 10px;
             border: 2px solid var(--secondary);
             font-family: inherit;
+            margin-bottom: 10px;
         }
 
-        /* El Lienzo */
-        #canvas-container {
+        /* Paleta de Colores en Rejilla */
+        .palette-grid {
             display: grid;
-            background-color: white;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            border: 4px solid var(--dark);
-            cursor: crosshair;
-            touch-action: none; /* Importante para dibujar en móviles */
+            grid-template-columns: repeat(4, 1fr); /* 4 columnas */
+            gap: 10px;
+            justify-items: center;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 15px;
         }
 
-        .pixel {
+        .swatch {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+
+        .swatch:hover { transform: scale(1.2); }
+        .swatch.selected { border-color: var(--dark); transform: scale(1.1); box-shadow: 0 0 0 2px var(--secondary); }
+
+        /* Input nativo disimulado */
+        #colorPicker {
             width: 100%;
-            height: 100%;
-            border: 1px solid #eee;
-            box-sizing: border-box;
+            height: 40px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        /* --- RESPONSIVE (Móviles) --- */
+        @media (max-width: 800px) {
+            body {
+                flex-direction: column; /* Volver a vertical en móviles */
+                height: auto;
+                overflow: visible;
+            }
+            .canvas-area {
+                height: auto;
+                min-height: 50vh;
+            }
+            .sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 4px solid var(--secondary);
+                box-sizing: border-box;
+            }
+            .palette-grid {
+                grid-template-columns: repeat(6, 1fr); /* Más columnas en móvil */
+            }
         }
     </style>
 </head>
 <body>
 
-    <h1>🎨 Pixel Art Mágico 👾</h1>
+    <div class="canvas-area">
+        <div id="canvas-container"></div>
+    </div>
 
-    <div class="controls-wrapper">
-        <div class="tools-row">
+    <div class="sidebar">
+        <h1>🎨 Pixel Art Mágico</h1>
+        
+        <div>
+            <div class="section-title">TAMAÑO</div>
             <select id="sizePicker">
                 <option value="8">8 x 8 (Grande)</option>
                 <option value="16" selected>16 x 16 (Normal)</option>
                 <option value="32">32 x 32 (Pequeño)</option>
             </select>
-
-            <div style="width: 2px; height: 30px; background:#ddd;"></div>
-
-            <input type="color" id="colorPicker" value="#000000" title="Mezclar color propio">
-            
-            <button id="btn-pencil" class="active" title="Lápiz">✏️</button>
-            <button id="btn-eraser" title="Goma">🧽</button>
-            
-            <div style="width: 2px; height: 30px; background:#ddd;"></div>
-
-            <button id="btn-clear" title="Borrar Todo" style="background: #ffadad; color: white;">🗑️</button>
         </div>
 
-        <div id="palette-container" class="palette-row">
+        <div>
+            <div class="section-title">HERRAMIENTAS</div>
+            <div class="tools-grid">
+                <button id="btn-pencil" class="active" title="Lápiz">✏️ Lápiz</button>
+                <button id="btn-eraser" title="Goma">🧽 Goma</button>
             </div>
-    </div>
+            <div style="margin-top:10px; text-align:center;">
+                <input type="color" id="colorPicker" value="#000000" title="Mezclar color propio">
+                <span style="font-size:0.8rem; color:#666;">👆 Toca para mezclar</span>
+            </div>
+        </div>
 
-    <div id="canvas-container"></div>
+        <div>
+            <div class="section-title">COLORES</div>
+            <div id="palette-container" class="palette-grid">
+                </div>
+        </div>
+
+        <button id="btn-clear">🗑️ BORRAR TODO</button>
+    </div>
 
     <script>
         // --- Configuración ---
         const PRESET_COLORS = [
-            '#000000', '#555555', '#AAAAAA', '#FFFFFF', // Escala grises
-            '#8B4513', '#D2691E', '#FFDEAD', '#F0E68C', // Marrones/Piel
-            '#FF0000', '#FF69B4', '#FF4500', '#FFA500', // Rojos/Rosas/Naranjas
-            '#FFD700', '#FFFF00', '#ADFF2F', '#008000', // Amarillos/Verdes
-            '#00FFFF', '#00BFFF', '#0000FF', '#8A2BE2'  // Azules/Morados
+            '#000000', '#555555', '#AAAAAA', '#FFFFFF', 
+            '#8B4513', '#D2691E', '#FFDEAD', '#F0E68C', 
+            '#FF0000', '#FF69B4', '#FF4500', '#FFA500', 
+            '#FFD700', '#FFFF00', '#ADFF2F', '#008000', 
+            '#00FFFF', '#00BFFF', '#0000FF', '#8A2BE2'  
         ];
 
-        // --- Variables DOM ---
+        // --- Elementos ---
         const canvasContainer = document.getElementById('canvas-container');
         const colorPicker = document.getElementById('colorPicker');
         const paletteContainer = document.getElementById('palette-container');
@@ -200,34 +252,36 @@
 
         // --- Estado ---
         let isDrawing = false;
-        let currentMode = 'pencil'; 
+        let currentMode = 'pencil';
         let currentSize = 16;
 
-        // --- Inicialización ---
         function init() {
-            // Generar la paleta visual
             generatePalette();
-
-            // Cargar datos
+            
+            // Recuperar datos
             const savedSize = localStorage.getItem('pixelart_size');
             if (savedSize) {
                 currentSize = parseInt(savedSize);
                 sizePicker.value = currentSize;
             }
-            
+
             const savedColor = localStorage.getItem('pixelart_color');
             if (savedColor) {
                 colorPicker.value = savedColor;
                 highlightSwatch(savedColor);
             } else {
-                highlightSwatch('#000000'); // Default
+                highlightSwatch('#000000');
             }
 
             createGrid(currentSize);
             loadDrawing();
+
+            // Ajustar grid si cambia ventana
+            window.addEventListener('resize', () => {
+                resizeCanvas(); // Solo ajusta tamaño visual
+            });
         }
 
-        // --- Generar Paleta ---
         function generatePalette() {
             paletteContainer.innerHTML = '';
             PRESET_COLORS.forEach(color => {
@@ -235,29 +289,20 @@
                 swatch.className = 'swatch';
                 swatch.style.backgroundColor = color;
                 swatch.onclick = () => {
-                    colorPicker.value = color; // Actualizar el input oculto
-                    highlightSwatch(color);    // Marcar visualmente
-                    setMode('pencil');         // Activar lápiz automáticamente
-                    saveState();               // Guardar color preferido
+                    colorPicker.value = color;
+                    highlightSwatch(color);
+                    setMode('pencil');
+                    saveState();
                 };
                 paletteContainer.appendChild(swatch);
             });
         }
 
         function highlightSwatch(colorHex) {
-            // Normalizar a mayúsculas para comparar
             const normalizedColor = colorHex.toUpperCase();
-            
-            // Quitar clase selected de todos
             document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
-            
-            // Buscar si el color existe en la paleta y seleccionarlo
-            // Nota: Esto busca coincidencia exacta. 
-            // Si el usuario usa el input nativo y elige un color raro, ninguno se marcará (comportamiento correcto).
             const swatches = document.querySelectorAll('.swatch');
             for(let s of swatches) {
-                // Convertimos el rgb() del estilo a hex para comparar o comparamos visualmente
-                // Una forma simple es comparar el background que asignamos
                 if (rgbToHex(s.style.backgroundColor).toUpperCase() === normalizedColor || 
                     s.style.backgroundColor === colorHex) {
                     s.classList.add('selected');
@@ -265,7 +310,6 @@
             }
         }
 
-        // Helper para convertir rgb(x,x,x) a hex (necesario por cómo los navegadores guardan estilos)
         function rgbToHex(col) {
             if(col.charAt(0)=='#') return col;
             col=col.split('(')[1].split(')')[0].split(',');
@@ -273,29 +317,41 @@
             return "#" + hex(col[0]) + hex(col[1]) + hex(col[2]);
         }
 
-        // --- Grid y Dibujo ---
         function createGrid(size) {
             canvasContainer.innerHTML = '';
-            const canvasSize = Math.min(window.innerWidth - 40, 500); 
-            canvasContainer.style.width = `${canvasSize}px`;
-            canvasContainer.style.height = `${canvasSize}px`;
+            
+            // Configurar grid CSS
             canvasContainer.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
             canvasContainer.style.gridTemplateRows = `repeat(${size}, 1fr)`;
 
+            // Crear pixeles
             for (let i = 0; i < size * size; i++) {
                 const pixel = document.createElement('div');
                 pixel.classList.add('pixel');
-                
-                // Eventos Mouse
                 pixel.addEventListener('mousedown', startDrawing);
                 pixel.addEventListener('mouseover', draw);
                 pixel.addEventListener('mouseup', stopDrawing);
-                
-                // Eventos Touch (Móvil)
                 pixel.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); draw(e); });
-                
                 canvasContainer.appendChild(pixel);
             }
+            
+            resizeCanvas(); // Calcular tamaño inicial
+        }
+
+        // Función inteligente para calcular el tamaño máximo posible del cuadrado
+        function resizeCanvas() {
+            const sidePanelWidth = window.innerWidth > 800 ? 320 : 0; // Si es escritorio, restamos panel
+            const availableWidth = window.innerWidth - sidePanelWidth - 40; // 40px padding
+            const availableHeight = window.innerHeight - 40; // 40px padding
+            
+            // Queremos un cuadrado, así que cogemos el lado más pequeño disponible
+            const maxSize = Math.min(availableWidth, availableHeight);
+            
+            // Protecciones para que no sea ni muy pequeño ni rompa layout
+            const finalSize = Math.max(300, maxSize); 
+
+            canvasContainer.style.width = `${finalSize}px`;
+            canvasContainer.style.height = `${finalSize}px`;
         }
 
         function startDrawing(e) { isDrawing = true; draw(e); }
@@ -322,7 +378,6 @@
 
         document.body.addEventListener('mouseup', () => { if(isDrawing) { isDrawing = false; saveDrawing(); } });
 
-        // --- Control de Herramientas ---
         function setMode(mode) {
             currentMode = mode;
             btnPencil.classList.toggle('active', mode === 'pencil');
@@ -332,7 +387,6 @@
         btnPencil.addEventListener('click', () => setMode('pencil'));
         btnEraser.addEventListener('click', () => setMode('eraser'));
 
-        // Input nativo cambia
         colorPicker.addEventListener('change', () => {
             setMode('pencil');
             highlightSwatch(colorPicker.value);
@@ -357,10 +411,7 @@
             }
         });
 
-        // --- Persistencia ---
-        function saveState() {
-            localStorage.setItem('pixelart_color', colorPicker.value);
-        }
+        function saveState() { localStorage.setItem('pixelart_color', colorPicker.value); }
 
         function saveDrawing() {
             const pixels = document.querySelectorAll('.pixel');
